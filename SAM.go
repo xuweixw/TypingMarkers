@@ -82,48 +82,47 @@ func (s *SAM) TypingMH(mh MHMarker) AlleleMH {
 // vcf format start with 1st base having position 1
 func (s *SAM) TypingSNP(marker SNP) string {
 	if s.chr != marker.CHROM || marker.POS-s.pos > uint64(len(s.seq)) || marker.POS-1 < s.pos {
-		return ""
+		return "N"
 	}
 	// calculate offset
 	pos := AdjustPos(marker.POS-s.pos, s.cigar)
+	// cigar sum is more than the length of sequences, return "N"
+	if int(pos) > len(s.seq) {
+		return "N"
+	}
 
 	// 1st base having position 1
 	return string(s.seq[pos-1])
 }
 
+// AdjustPos offset sequence index according to cigar value 's'.
 func AdjustPos(pos uint64, s string) uint64 {
-	var adjP, maximum uint64
-
+	// extract cigar number into a slice.
 	nucleotideGroups := strings.FieldsFunc(s, func(r rune) bool {
 		return unicode.IsLetter(r)
 	})
-	totalGroups := len(nucleotideGroups)
+	restGroups := len(nucleotideGroups)
 
 	for i := 0; i >= 0; {
+		// extract cigar character one by one.
 		i = strings.IndexFunc(s, func(r rune) bool {
 			return unicode.IsLetter(r)
 		})
-		//  fmt.Println(totalGroups, nucleotideGroups, s, pos)
-		currentGroup, _ := strconv.ParseUint(nucleotideGroups[len(nucleotideGroups)-totalGroups], 10, 64)
+		if i == -1 {
+			return pos
+		}
+
+		currentGroup, _ := strconv.ParseUint(nucleotideGroups[len(nucleotideGroups)-restGroups], 10, 64)
 		// each "D" decreases 1
 		// each "I" pluses 1
 		switch s[i] {
-		case 'M':
-			maximum += currentGroup
-			if maximum >= pos {
-				return pos
-			}
+		//case 'M':
 		case 'I':
-			maximum += currentGroup
 			pos += currentGroup
 		case 'D':
-			maximum -= currentGroup
 			pos -= currentGroup
 		}
-		if adjP > maximum {
-			adjP += maximum
-		}
-		totalGroups--
+		restGroups--
 		s = s[:i] + "-" + s[i+1:]
 	}
 	return pos

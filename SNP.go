@@ -24,7 +24,7 @@ func (snp SNP) GetPOS() uint64 {
 func (snp SNP) GetCHROM() string {
 	return snp.CHROM
 }
-func (snp *SNP) GetAlleles() []uint64 {
+func (snp SNP) GetAlleles() []uint64 {
 	return snp.Alleles[:]
 }
 
@@ -46,7 +46,7 @@ func ExtractSNP(file *os.File, marker *SNP) {
 			continue
 		}
 		allele := SAMrecord.TypingSNP(*marker)
-		if allele == "" {
+		if allele == "N" {
 			continue
 		}
 		switch allele {
