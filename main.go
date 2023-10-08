@@ -57,9 +57,11 @@ func statAlleles() {
 	check(err)
 
 	handleVCF, err := os.Open(*VCF)
+	defer handleVCF.Close()
 	check(err)
 
 	handleSAM, err := os.Open(*SAMPath)
+	defer handleSAM.Close()
 	check(err)
 
 	markers := NewVCFFormat(handleVCF)
@@ -71,23 +73,25 @@ func statAlleles() {
 			ExtractSNP(handleSAM, &m)
 			_, err = writer.WriteString(m.String() + "\n")
 			check(err)
-		case MHMarker:
-			fmt.Println("ok")
+		case MH:
+			ExtractMHAlleles(handleSAM, &m)
+			_, err = writer.WriteString(m.String() + "\n")
+			check(err)
 		}
 	}
 	err = writer.Flush()
 	check(err)
 }
 
-func plotStat() {
-	cmd := exec.Command("Rscript",
-		"plotStat.R",
-		*OUT+".csv")
-	_, err := cmd.Output()
-	if err != nil {
-		log.Panic(err)
-	}
-}
+//func plotStat() {
+//	cmd := exec.Command("Rscript",
+//		"plotStat.R",
+//		*OUT+".csv")
+//	_, err := cmd.Output()
+//	if err != nil {
+//		log.Panic(err)
+//	}
+//}
 
 // check function acts as a utility tool for entire error check.
 func check(err error) {

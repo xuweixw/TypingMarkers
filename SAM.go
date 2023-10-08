@@ -21,14 +21,8 @@ type SAM struct {
 }
 
 /*
-NewSAM
-A01045:788:HYM3WDSX2:4:1504:12536:25927 99
-Chr1    16574508        42      150M    =       16574679        321
-GCCATTTTCCCAGGAAATACTCCAATGAATCATTCCTAGGCACTTGATCTCAACAATTTCTATTTAT
-CAATGTTTATCTCATTAGTGATTACAAAAAGCAGCTTTATCCTCCCCAACTCCCTCCCTTCATGTTTGTTTTTTTCTAATTAG
-FFFFFFFFFFFFFFFFFFFFFFFF:FFF:FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:FFFFF
-FFFFFFFFFFFFFFFFFFFFF:FFFFFFFFFFF:FFFFFFFFFFFFF,,,FF:FFFFFF:FFFFF:FFFF,FFFFFF,FFFFF
-AS:i:0  XN:i:0  XM:i:0  XO:i:0  XG:i:0  NM:i:0  MD:Z:150        YS:i:-20        YT:Z:CP
+NewSAM parses a string to SAM struct.
+seqID 99	CHR	POS	42	24M	=	16574679	321	sequence	quality	AS:i:0  XN:i:0  XM:i:0  XO:i:0  XG:i:0  NM:i:0  MD:Z:150	YS:i:-20	YT:Z:CP
 */
 func NewSAM(record string) *SAM {
 	var (
@@ -62,14 +56,18 @@ func NewSAM(record string) *SAM {
 
 // TypingMH returns the allele. If the seq overlaps the microhaplotype, the missing SNPs represent to ".".
 // If the seq doesn't overlap the microhaplotype, empty string was returned.
-func (s *SAM) TypingMH(mh MHMarker) AlleleMH {
-	var alleleSNP []string
+func (s *SAM) TypingMH(mh MH) AlleleMH {
 
-	if s.chr != mh.Chr || s.cigar != "150M" || mh.SNPs[0]-s.pos > 150 || mh.SNPs[len(mh.SNPs)-1] < s.pos {
+	// the record don't overlap with MicroHaplotype marker.
+	if s.chr != mh.CHROM || //s.cigar != "150M" ||
+		mh.POS-s.pos > uint64(len(s.seq)) || mh.OffSet[len(mh.OffSet)-1] < s.pos {
 		return ""
 	}
-	for _, p := range mh.SNPs {
-		if i := p - s.pos; i >= 0 && i < 150 {
+
+	//
+	var alleleSNP = []string{string(s.seq[mh.POS-s.pos])} // The first SNP.
+	for _, sub := range mh.OffSet {                       // The rest of SNPs.
+		if i := (sub + mh.POS) - s.pos; i >= 0 && i < uint64(len(s.seq)) {
 			alleleSNP = append(alleleSNP, string(s.seq[i]))
 		} else {
 			alleleSNP = append(alleleSNP, ".")

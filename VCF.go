@@ -68,7 +68,7 @@ func (v *VCFFormat) String() string {
 		strings.Join(properties, ";"))
 }
 
-// parseINFO pare INFO field from a string into a map.
+// parseINFO parse INFO field from a string into a map.
 func parseINFO(s string) map[INFOKey]INFOValue {
 	var INFO = make(map[INFOKey]INFOValue)
 	property := strings.Split(s, ";")
@@ -112,8 +112,15 @@ func NewVCFFormat(file *os.File) (records []GeneticMarker) {
 			QUAL: fields[5], FILTER: fields[6],
 			INFO: parseINFO(fields[7]),
 		}
-		if _, ok := record.INFO["OFFSET"]; ok {
-			//
+		if v, ok := record.INFO["OFFSET"]; ok {
+			var offset []uint64
+			for i := range v {
+				// Cautious, there is a type assertion for converting 'any' to 'string'
+				sub, err := strconv.ParseUint(v[i].(string), 10, 64)
+				check(err)
+				offset = append(offset, sub)
+			}
+			records = append(records, MH{VCFFormat: record, OffSet: offset, Alleles: make(map[AlleleMH]float64)})
 		} else {
 			records = append(records, SNP{VCFFormat: record})
 		}

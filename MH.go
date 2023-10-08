@@ -3,36 +3,37 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
+	"io"
 	"math"
 	"os"
-	"os/exec"
-	"strconv"
 	"strings"
 )
 
 type AlleleMH string
 
-type MHMarker struct {
-	ID      string
-	Chr     string
-	SNPs    []uint64
-	Alleles map[AlleleMH]float64 // 单个个体每个基因型的统计深度
+type MH struct {
+	VCFFormat
 
+	// A microhaplotype marker consists of two and more SNP sites.
+	// The position of first SNP records in VCFFormat.POS, and others record in here.
+	// the offset is relative to first SNP.
+	OffSet []uint64
+
+	Alleles    map[AlleleMH]float64   // 单个个体每个基因型的统计深度
 	Population map[string][2]AlleleMH //每个个体的基因型, 带"."的alleleMH都用单个"."表示
 }
 
-func (mh MHMarker) String() string {
-	return ""
+func (mh MH) String() string {
+	return fmt.Sprintf("%s\t%d\t%s\t%v", mh.CHROM, mh.POS, mh.ID, mh.Alleles)
 }
-func (mh MHMarker) GetCHROM() string {
-	return ""
+func (mh MH) GetCHROM() string {
+	return mh.CHROM
 }
-func (mh MHMarker) GetPOS() uint64 {
-	return 0
+func (mh MH) GetPOS() uint64 {
+	return mh.POS
 }
 
-func (mh *MHMarker) IndividualGenotype(sample string) [2]AlleleMH {
+func (mh *MH) IndividualGenotype(sample string) [2]AlleleMH {
 	if diploid, ok := mh.Population[sample]; ok {
 		return diploid
 	} else {
@@ -41,7 +42,7 @@ func (mh *MHMarker) IndividualGenotype(sample string) [2]AlleleMH {
 }
 
 // 群体多态信息含量
-func (mh *MHMarker) PIC() float64 {
+func (mh *MH) PIC() float64 {
 	var (
 		stat  = mh.allelePopulation()
 		numP  = float64(len(mh.Population)) * 2
@@ -69,7 +70,7 @@ func pic(n []float64) float64 {
 }
 
 // 群体等位基因数量统计
-func (mh *MHMarker) allelePopulation() map[AlleleMH]int {
+func (mh *MH) allelePopulation() map[AlleleMH]int {
 	var stat = make(map[AlleleMH]int)
 	for _, diploid := range mh.Population {
 		// 第一条染色体
@@ -90,18 +91,18 @@ func (mh *MHMarker) allelePopulation() map[AlleleMH]int {
 }
 
 // Ae refers to the effective number of alleles
-func (mh *MHMarker) Ae() int {
+func (mh *MH) Ae() int {
 	return len(mh.allelePopulation())
 }
 
-func (mh *MHMarker) appendSNP(n uint64) {
-	mh.SNPs = append(mh.SNPs, n)
-}
+//func (mh *MHMarker) appendSNP(n uint64) {
+//	mh.SNPs = append(mh.SNPs, n)
+//}
 
 // Classify method decides which overlapping alleles belong to a complete allele.
 // Each overlapping allele add 1/len(SNPs) to corresponding allele.
 // Only Onw or Two alleles would be retained, other seldom alleles (frequency is lee than 10 %) would be abandoned.
-func (mh *MHMarker) Classify() {
+func (mh *MH) Classify() {
 	// extract compete alleles
 	var (
 		alleles  []AlleleMH
@@ -139,7 +140,7 @@ func (mh *MHMarker) Classify() {
 	}
 }
 
-func (mh *MHMarker) SimpleString() string {
+func (mh *MH) SimpleString() string {
 	var (
 		s       string
 		alleles []AlleleMH
@@ -162,62 +163,58 @@ func (mh *MHMarker) SimpleString() string {
 	return s
 }
 
-func NewMHMarker(ID string, Chr string, SNPs []uint64) *MHMarker {
-	return &MHMarker{ID: ID, Chr: Chr, SNPs: SNPs, Alleles: make(map[AlleleMH]float64)}
-}
-
-func NewMHMarkerCollection() map[string]MHMarker {
-	var set = make(map[string]MHMarker, 0)
+func NewMHCollection() map[string]MH {
+	var set = make(map[string]MH, 0)
 	return set
 }
 
 // input marker form file.
-func NewMHMarkers(path string) []MHMarker {
-	var (
-		markers []MHMarker
-		current *MHMarker
-	)
+//func NewMHMarkers(path string) []MHMarker {
+//	var (
+//		markers []MHMarker
+//		current *MHMarker
+//	)
+//
+//	handle, err := os.Open(path)
+//	if err != nil {
+//		log.Fatalln(err)
+//	}
+//	scanner := bufio.NewScanner(handle)
+//	for scanner.Scan() {
+//		fields := strings.Split(scanner.Text(), "\t")
+//		if len(fields) < 7 {
+//			continue
+//		}
+//		chr := fields[0]
+//		Pos, _ := strconv.ParseUint(fields[1], 10, 64)
+//		mhID := fields[6]
+//		if current == nil {
+//			current = NewMHMarker(mhID, chr, []uint64{Pos})
+//		} else if current.Chr != chr {
+//			markers = append(markers, *current)
+//			current = NewMHMarker(mhID, chr, []uint64{Pos})
+//		} else if current.ID == mhID {
+//			current.appendSNP(Pos)
+//		} else {
+//			markers = append(markers, *current)
+//			current = NewMHMarker(mhID, chr, []uint64{Pos})
+//		}
+//	}
+//	markers = append(markers, *current)
+//	return markers
+//}
 
-	handle, err := os.Open(path)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	scanner := bufio.NewScanner(handle)
-	for scanner.Scan() {
-		fields := strings.Split(scanner.Text(), "\t")
-		if len(fields) < 7 {
-			continue
-		}
-		chr := fields[0]
-		Pos, _ := strconv.ParseUint(fields[1], 10, 64)
-		mhID := fields[6]
-		if current == nil {
-			current = NewMHMarker(mhID, chr, []uint64{Pos})
-		} else if current.Chr != chr {
-			markers = append(markers, *current)
-			current = NewMHMarker(mhID, chr, []uint64{Pos})
-		} else if current.ID == mhID {
-			current.appendSNP(Pos)
-		} else {
-			markers = append(markers, *current)
-			current = NewMHMarker(mhID, chr, []uint64{Pos})
-		}
-	}
-	markers = append(markers, *current)
-	return markers
-}
+//var (
+//	SAM1 = "" // path
+//	MH1  = MHMarker{ID: "mhGP01", Chr: "Chr1", SNPs: []uint64{16574710, 16574718, 16574732}}
+//)
 
-var (
-	SAM1 = "" // path
-	MH1  = MHMarker{ID: "mhGP01", Chr: "Chr1", SNPs: []uint64{16574710, 16574718, 16574732}}
-)
+func ExtractMHAlleles(file *os.File, marker *MH) {
+	//Debug #1: reset pointer offset. (2023-09-13)
+	_, err := file.Seek(0, io.SeekStart)
+	check(err)
 
-func ExtractMHAlleles(path string, marker *MHMarker) {
-	handle, err := os.Open(path)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	scanner := bufio.NewScanner(handle)
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		SAMrecord := NewSAM(scanner.Text())
 		if SAMrecord == nil {
@@ -235,38 +232,3 @@ func ExtractMHAlleles(path string, marker *MHMarker) {
 		}
 	}
 }
-
-func CMDSamtools(bamfile string, mh *MHMarker) {
-	cmd := exec.Command("samtools",
-		"view",
-		"-o", fmt.Sprintf("temp/%s.sam", mh.ID),
-		bamfile,
-		fmt.Sprintf("%s:%d-%d", mh.Chr, mh.SNPs[0]-100, mh.SNPs[len(mh.SNPs)-1]+100))
-	//fmt.Println(cmd.Args, "okkkkk")
-	cmd.Output()
-}
-
-func CMDRemoveTemp(mh *MHMarker) {
-	cmd := exec.Command("rm",
-		fmt.Sprintf("temp/%s.sam", mh.ID))
-	cmd.Output()
-}
-
-/*
-func main() {
-	flag.Parse()
-	if *SNP_path == "" || *BAM == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	makers := NewMHMarkers(*SNP_path)
-	for _, marker := range makers {
-		CMDSamtools(*BAM, &marker)
-		ExtractMHAlleles(fmt.Sprintf("temp/%s.sam", marker.ID), &marker)
-		CMDRemoveTemp(&marker)
-		marker.Classify()
-		fmt.Println(marker.SimpleString())
-	}
-}
-*/
