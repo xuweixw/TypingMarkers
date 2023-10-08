@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"time"
 )
 
@@ -32,17 +31,17 @@ func main() {
 
 }
 
-func filterSAM() {
-	cmd := exec.Command("samtools",
-		"view",
-		"-F", "4",
-		"-o", *OUT+"_valid.sam",
-		*SAMPath)
-	_, err := cmd.Output()
-	if err != nil {
-		log.Panic(err)
-	}
-}
+//func filterSAM() {
+//	cmd := exec.Command("samtools",
+//		"view",
+//		"-F", "4",
+//		"-o", *OUT+"_valid.sam",
+//		*SAMPath)
+//	_, err := cmd.Output()
+//	if err != nil {
+//		log.Panic(err)
+//	}
+//}
 
 func statAlleles() {
 	outHandle, err := os.Create(*OUT + ".csv")
