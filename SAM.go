@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -61,14 +60,20 @@ func (s *SAM) TypingMH(mh MH) AlleleMH {
 
 	// the record don't overlap with MicroHaplotype marker.
 	if s.chr != mh.CHROM || //s.cigar != "150M" ||
-		mh.POS-s.pos > uint64(len(s.seq)) || mh.OffSet[len(mh.OffSet)-1]+mh.POS < s.pos {
+		mh.POS > s.pos+uint64(len(s.seq)) || // ref.first.SNP > align.end
+		mh.OffSet[len(mh.OffSet)-1]+mh.POS < s.pos { // ref.last.SNP < align.start
 		return ""
 	}
 
-	fmt.Println("okk", s.chr, mh)
+	//fmt.Println("okk", s.chr, mh)
 
-	var alleleSNP = []string{string(s.seq[mh.POS-s.pos])} // The first SNP.
-	for _, sub := range mh.OffSet {                       // The rest of SNPs.
+	var alleleSNP []string // The first SNP.
+	if mh.POS < s.pos {    // right overlap
+		alleleSNP = append(alleleSNP, ".")
+	} else {
+		alleleSNP = append(alleleSNP, string(s.seq[mh.POS-s.pos]))
+	}
+	for _, sub := range mh.OffSet { // The rest of SNPs.
 		if i := (sub + mh.POS) - s.pos; i >= 0 && i < uint64(len(s.seq)) {
 			alleleSNP = append(alleleSNP, string(s.seq[i]))
 		} else {

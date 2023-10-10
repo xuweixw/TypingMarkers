@@ -24,13 +24,44 @@ type MH struct {
 }
 
 func (mh MH) String() string {
-	return fmt.Sprintf("%s\t%d\t%s\t%v", mh.CHROM, mh.POS, mh.ID, mh.Alleles)
+	var genotype = mh.DetermineGenotype()
+	//return fmt.Sprintf("%s\t%d\t%s\t%v", mh.CHROM, mh.POS, mh.ID, mh.Alleles)
+	return fmt.Sprintf("%s\t%s\t%s", mh.ID, genotype[0], genotype[1])
 }
+
 func (mh MH) GetCHROM() string {
 	return mh.CHROM
 }
 func (mh MH) GetPOS() uint64 {
 	return mh.POS
+}
+
+// DetermineGenotype return genotype.
+func (mh MH) DetermineGenotype() [2]AlleleMH {
+	var (
+		count    float64
+		genotype []AlleleMH
+	)
+	// Calculate depth.
+	for _, n := range mh.Alleles {
+		count += n
+	}
+	// Omit alleles which of frequency are less than 3%.
+	for allele, n := range mh.Alleles {
+		if n/count > 0.03 {
+			genotype = append(genotype, allele)
+		}
+	}
+
+	// According to the number of retained alleles, homozygous, heterozygous or failure genotype would be determined.
+	switch len(genotype) {
+	case 1:
+		return [2]AlleleMH{genotype[0], genotype[0]}
+	case 2:
+		return [2]AlleleMH{genotype[0], genotype[1]}
+	default: // Void or three and more.
+		return [2]AlleleMH{}
+	}
 }
 
 func (mh *MH) IndividualGenotype(sample string) [2]AlleleMH {
