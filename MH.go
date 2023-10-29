@@ -6,10 +6,11 @@ import (
 	"io"
 	"math"
 	"os"
+	"sort"
 	"strings"
 )
 
-type AlleleMH string
+type AlleleMH = string
 
 type MH struct {
 	VCFFormat
@@ -25,8 +26,16 @@ type MH struct {
 
 func (mh MH) String() string {
 	var genotype = mh.DetermineGenotype()
-	//return fmt.Sprintf("%s\t%d\t%s\t%v", mh.CHROM, mh.POS, mh.ID, mh.Alleles)
-	return fmt.Sprintf("%s\t%s\t%s", mh.ID, genotype[0], genotype[1])
+	var genotypeSlice = genotype[:]
+	// There are four compounds that make of DNA (Adenine, Guanine, Cytosine, Thymine).
+	sort.Strings(genotypeSlice)
+
+	return fmt.Sprintf("%s\t%s\t%s", mh.ID, genotypeSlice[0], genotypeSlice[1])
+}
+
+// VerboseString print the details of each alleles of each markers, including coverage/count/depth, position.
+func (mh MH) VerboseString() string {
+	return fmt.Sprintf("%s\t%d\t%s\t%v", mh.CHROM, mh.POS, mh.ID, mh.Alleles)
 }
 
 func (mh MH) GetCHROM() string {

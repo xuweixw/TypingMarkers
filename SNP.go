@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 )
 
 type SNP struct {
@@ -14,6 +15,11 @@ type SNP struct {
 	// The four elements of array represents the coverage of each alleles corresponding to ["A", "T", "C", "G"].
 	Alleles [4]uint64
 }
+
+// BASE is a kind of nucleotide in DNA (A, T, G, C).
+type BASE = string
+
+var SortedBASE = [4]BASE{"A", "T", "C", "G"}
 
 // Type assertion at compile time, to check SNP implements GeneticMarker interface.
 var _ GeneticMarker = (*SNP)(nil)
@@ -28,9 +34,38 @@ func (snp SNP) GetAlleles() []uint64 {
 	return snp.Alleles[:]
 }
 
-func (snp SNP) String() string {
+func (snp SNP) VerboseString() string {
 	return fmt.Sprintf("%s\t%d\t%d\t%d\t%d\t%d",
 		snp.ID, snp.Alleles[0], snp.Alleles[1], snp.Alleles[2], snp.Alleles[3], snp.POS)
+}
+
+func (snp SNP) String() string {
+	var genotype = snp.DetermineGenotype()
+	var genotypeSlice = genotype[:]
+	// There are four compounds that make of DNA (Adenine, Guanine, Cytosine, Thymine).
+	sort.Strings(genotypeSlice)
+	return fmt.Sprintf("%s\t%s\t%s", snp.ID, genotypeSlice[0], genotypeSlice[1])
+}
+
+// DetermineGenotype removes less than three percent of BASE from four possibility.
+func (snp SNP) DetermineGenotype() [2]BASE {
+	var count = snp.Alleles[0] + snp.Alleles[1] + snp.Alleles[2] + snp.Alleles[3]
+	var genotype []BASE
+	for i, base := range SortedBASE {
+		if float64(snp.Alleles[i])/float64(count) > 0.03 {
+			genotype = append(genotype, base)
+		}
+	}
+
+	// According to the number of retained alleles, homozygous, heterozygous or failure genotype would be determined.
+	switch len(genotype) {
+	case 1:
+		return [2]BASE{genotype[0], genotype[0]}
+	case 2:
+		return [2]BASE{genotype[0], genotype[1]}
+	default: // Void or three and more.
+		return [2]BASE{}
+	}
 }
 
 func ExtractSNP(file *os.File, marker *SNP) {

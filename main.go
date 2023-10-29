@@ -44,15 +44,22 @@ func main() {
 //}
 
 func statAlleles() {
-	outHandle, err := os.Create(*OUT + ".csv")
+	outHandle, err := os.Create(*OUT + ".tab")
+	outVerboseHandle, err := os.Create(*OUT + "verbose.csv")
 	defer func() {
 		err = outHandle.Close()
+		check(err)
+		err := outVerboseHandle.Close()
 		check(err)
 	}()
 	check(err)
 
 	writer := bufio.NewWriter(outHandle)
 	_, err = writer.WriteString(fmt.Sprintln("Marker\tA\tT\tC\tG"))
+	check(err)
+
+	writerVerbose := bufio.NewWriter(outVerboseHandle)
+	_, err = writerVerbose.WriteString(fmt.Sprintln("Marker\tA\tT\tC\tG"))
 	check(err)
 
 	handleVCF, err := os.Open(*VCF)
@@ -72,13 +79,20 @@ func statAlleles() {
 			ExtractSNP(handleSAM, &m)
 			_, err = writer.WriteString(m.String() + "\n")
 			check(err)
+			_, err = writerVerbose.WriteString(m.VerboseString() + "\n")
+			check(err)
 		case MH:
 			ExtractMHAlleles(handleSAM, &m)
 			_, err = writer.WriteString(m.String() + "\n")
 			check(err)
+			_, err = writerVerbose.WriteString(m.VerboseString() + "\n")
+			fmt.Println(m.VerboseString())
+			check(err)
 		}
 	}
 	err = writer.Flush()
+	check(err)
+	err = writerVerbose.Flush()
 	check(err)
 }
 
