@@ -86,7 +86,6 @@ func statAlleles() {
 			_, err = writer.WriteString(m.String() + "\n")
 			check(err)
 			_, err = writerVerbose.WriteString(m.VerboseString() + "\n")
-			fmt.Println(m.VerboseString())
 			check(err)
 		}
 	}
