@@ -45,7 +45,7 @@ func main() {
 
 func statAlleles() {
 	outHandle, err := os.Create(*OUT + ".tab")
-	outVerboseHandle, err := os.Create(*OUT + "verbose.csv")
+	outVerboseHandle, err := os.Create(*OUT + ".verbose.csv")
 	defer func() {
 		err = outHandle.Close()
 		check(err)
