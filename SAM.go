@@ -59,7 +59,8 @@ func NewSAM(record string) *SAM {
 func (s *SAM) TypingMH(mh MH) AlleleMH {
 
 	// the record don't overlap with MicroHaplotype marker.
-	if s.chr != mh.CHROM || //s.cigar != "150M" ||
+	if s.chr != mh.CHROM ||
+		strings.IndexAny(s.cigar, "IDNSHPX=") != -1 ||
 		mh.POS > s.pos+uint64(len(s.seq)) || // ref.first.SNP > align.end
 		mh.OffSet[len(mh.OffSet)-1]+mh.POS < s.pos { // ref.last.SNP < align.start
 		return ""
