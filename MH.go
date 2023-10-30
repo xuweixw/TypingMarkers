@@ -35,7 +35,18 @@ func (mh MH) String() string {
 
 // VerboseString print the details of each alleles of each markers, including coverage/count/depth, position.
 func (mh MH) VerboseString() string {
-	return fmt.Sprintf("%s\t%d\t%s\t%v", mh.CHROM, mh.POS, mh.ID, mh.Alleles)
+	var allelesSortedByValue = make([][2]interface{}, 0, len(mh.Alleles))
+	var s = strings.Builder{}
+	for k, v := range mh.Alleles {
+		allelesSortedByValue = append(allelesSortedByValue, [2]interface{}{k, v})
+	}
+	sort.Slice(allelesSortedByValue, func(i, j int) bool {
+		return allelesSortedByValue[i][1].(float64) > allelesSortedByValue[j][1].(float64)
+	})
+	for _, v := range allelesSortedByValue {
+		s.WriteString(fmt.Sprintf("%s:%0.f ", v[0].(string), v[1].(float64)))
+	}
+	return fmt.Sprintf("%s\t%d\t%s\t%s", mh.CHROM, mh.POS, mh.ID, s.String())
 }
 
 func (mh MH) GetCHROM() string {
@@ -149,7 +160,7 @@ func (mh *MH) Classify() {
 		coverage float64
 	)
 
-	for k, _ := range mh.Alleles {
+	for k := range mh.Alleles {
 		if i := strings.Index(string(k), "."); i == -1 {
 			alleles = append(alleles, AlleleMH(k))
 		}
@@ -186,7 +197,7 @@ func (mh *MH) SimpleString() string {
 		alleles []AlleleMH
 	)
 
-	for allele, _ := range mh.Alleles {
+	for allele := range mh.Alleles {
 		alleles = append(alleles, allele)
 	}
 
