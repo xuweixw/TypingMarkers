@@ -68,7 +68,7 @@ func (mh MH) DetermineGenotype() [2]AlleleMH {
 	}
 	// Omit alleles which of frequency are less than 3%.
 	for allele, n := range mh.Alleles {
-		if n/count > 0.03 {
+		if n/count > *min_freq {
 			genotype = append(genotype, allele)
 		}
 	}

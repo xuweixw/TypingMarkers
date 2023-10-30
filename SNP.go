@@ -52,7 +52,7 @@ func (snp SNP) DetermineGenotype() [2]BASE {
 	var count = snp.Alleles[0] + snp.Alleles[1] + snp.Alleles[2] + snp.Alleles[3]
 	var genotype []BASE
 	for i, base := range SortedBASE {
-		if float64(snp.Alleles[i])/float64(count) > 0.03 {
+		if float64(snp.Alleles[i])/float64(count) > *min_freq {
 			genotype = append(genotype, base)
 		}
 	}
