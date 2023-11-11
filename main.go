@@ -56,11 +56,11 @@ func statAlleles() {
 	check(err)
 
 	writer := bufio.NewWriter(outHandle)
-	_, err = writer.WriteString(fmt.Sprintln("Marker\tA\tT\tC\tG"))
+	_, err = writer.WriteString(fmt.Sprintln("#Marker\tA\tT\tC\tG"))
 	check(err)
 
 	writerVerbose := bufio.NewWriter(outVerboseHandle)
-	_, err = writerVerbose.WriteString(fmt.Sprintln("Marker\tA\tT\tC\tG"))
+	_, err = writerVerbose.WriteString(fmt.Sprintln("#Marker\tA\tT\tC\tG"))
 	check(err)
 
 	handleVCF, err := os.Open(*VCF)

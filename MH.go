@@ -20,8 +20,9 @@ type MH struct {
 	// the offset is relative to first SNP.
 	OffSet []uint64
 
-	Alleles    map[AlleleMH]float64   // 单个个体每个基因型的统计深度
-	Population map[string][2]AlleleMH //每个个体的基因型, 带"."的alleleMH都用单个"."表示
+	Alleles     map[AlleleMH]float64 // 单个个体每个基因型的统计深度
+	RareAlleles map[AlleleMH]float64
+	Population  map[string][2]AlleleMH //每个个体的基因型, 带"."的alleleMH都用单个"."表示
 }
 
 func (mh MH) String() string {
@@ -35,18 +36,25 @@ func (mh MH) String() string {
 
 // VerboseString print the details of each alleles of each markers, including coverage/count/depth, position.
 func (mh MH) VerboseString() string {
-	var allelesSortedByValue = make([][2]interface{}, 0, len(mh.Alleles))
-	var s = strings.Builder{}
-	for k, v := range mh.Alleles {
-		allelesSortedByValue = append(allelesSortedByValue, [2]interface{}{k, v})
+	return fmt.Sprintf("%s\t%d\t%s\t%s\t%s", mh.CHROM, mh.POS, mh.ID, mapToString(mh.Alleles), mapToString(mh.RareAlleles))
+}
+
+// mapToString is generic function to print map type.
+func mapToString[T int | float64 | float32](m map[string]T) string {
+	var (
+		s                = strings.Builder{}
+		mapSortedByValue = make([][2]interface{}, 0, len(m))
+	)
+	for k, v := range m {
+		mapSortedByValue = append(mapSortedByValue, [2]interface{}{k, v})
 	}
-	sort.Slice(allelesSortedByValue, func(i, j int) bool {
-		return allelesSortedByValue[i][1].(float64) > allelesSortedByValue[j][1].(float64)
+	sort.Slice(mapSortedByValue, func(i, j int) bool {
+		return mapSortedByValue[i][1].(T) > mapSortedByValue[j][1].(T)
 	})
-	for _, v := range allelesSortedByValue {
+	for _, v := range mapSortedByValue {
 		s.WriteString(fmt.Sprintf("%s:%0.f ", v[0].(string), v[1].(float64)))
 	}
-	return fmt.Sprintf("%s\t%d\t%s\t%s", mh.CHROM, mh.POS, mh.ID, s.String())
+	return s.String()
 }
 
 func (mh MH) GetCHROM() string {
@@ -275,11 +283,45 @@ func ExtractMHAlleles(file *os.File, marker *MH) {
 		if allele == "" {
 			continue
 		}
-		// overlap
-		if _, ok := marker.Alleles[allele]; ok {
-			marker.Alleles[allele] += 1
-		} else {
-			marker.Alleles[allele] = 1
+		// MH.Alleles
+		// MH.RareAlleles
+		// allele
+
+		// 如果当前等位基因完整，先判断是否已知，如已知，跳入下一个循环，如未知，加入罕见列表。
+		// 如果当前等位基因残缺，先判断可否加入已知，已经累计到已知，跳入下一个循环，如未知，再判断可否加入未知。
+		var commonAllele bool
+		for existAllele := range marker.Alleles {
+			if n := CountMatchSNPInMH(allele, existAllele); n > 0 {
+				marker.Alleles[existAllele] += float64(n)
+				commonAllele = true
+			}
+		}
+		if !commonAllele && strings.Index(allele, ".") == -1 { // Un-match without Overhang
+			if _, ok := marker.RareAlleles[allele]; ok {
+				marker.RareAlleles[allele] += float64(len(allele)%2 + 1)
+			} else {
+				marker.RareAlleles[allele] = float64(len(allele)%2 + 1)
+			}
 		}
 	}
+}
+
+// CountMatchSNPInMH returns complete and overhang match number of SNP in a MH allele or -1 for never match.
+func CountMatchSNPInMH(new, exist AlleleMH) (n int) {
+	if len(new) != len(exist) {
+		return -1
+	}
+	for i := 0; i < len(new); i += 2 {
+		switch {
+		case new[i] == exist[i]:
+			n++
+		case new[i] == '.' && n == 0: // for left overhang
+			n = 0
+		case new[i] == '.' && n != 0: // for right overhang
+			return
+		default: // for never match
+			return -1
+		}
+	}
+	return
 }

@@ -120,7 +120,12 @@ func NewVCFFormat(file *os.File) (records []GeneticMarker) {
 				check(err)
 				offset = append(offset, sub)
 			}
-			records = append(records, MH{VCFFormat: record, OffSet: offset, Alleles: make(map[AlleleMH]float64)})
+			// The keys of MH.Alleles were initially set by VCF Ref and Alt fields.
+			var alleles = map[AlleleMH]float64{record.REF: 0}
+			for _, allele := range strings.Split(record.ALT, ",") {
+				alleles[allele] = 0
+			}
+			records = append(records, MH{VCFFormat: record, OffSet: offset, Alleles: alleles, RareAlleles: make(map[AlleleMH]float64)})
 		} else {
 			records = append(records, SNP{VCFFormat: record})
 		}
