@@ -297,10 +297,10 @@ func ExtractMHAlleles(file *os.File, marker *MH) {
 			}
 		}
 		if !commonAllele && strings.Index(allele, ".") == -1 { // Un-match without Overhang
-			if _, ok := marker.RareAlleles[allele]; ok {
-				marker.RareAlleles[allele] += float64(len(allele)%2 + 1)
+			if c, ok := marker.RareAlleles[allele]; ok {
+				marker.RareAlleles[allele] = c + float64(len(allele)/2+1)
 			} else {
-				marker.RareAlleles[allele] = float64(len(allele)%2 + 1)
+				marker.RareAlleles[allele] = float64(len(allele)/2 + 1)
 			}
 		}
 	}
