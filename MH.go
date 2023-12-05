@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -220,6 +221,73 @@ func (mh *MH) SimpleString() string {
 		s = fmt.Sprintf("#%s\t%v", mh.ID, mh.Alleles)
 	}
 	return s
+}
+
+func (mh *MH) Mutation(sam *SAM) bool {
+	// Convert by auxiliary tag "MD"
+	var (
+		MD      = sam.AuxiliaryTag["MD"]
+		MDArray MutationArray
+	)
+L:
+	for len(MD) > 0 {
+		switch i := strings.IndexAny(MD, "ATGC"); i {
+		case -1:
+			leftMatch, _ := strconv.ParseInt(MD, 10, 64)
+			matchPart := make([]bool, leftMatch)
+			MDArray = append(MDArray, matchPart...)
+			//fmt.Println(MD, MDArray)
+			break L
+		case 0:
+			MDArray = append(MDArray, true)
+			MD = MD[1:]
+		default:
+			leftMatch, _ := strconv.ParseInt(MD[:i], 10, 64)
+			matchPart := make([]bool, leftMatch)
+			MDArray = append(MDArray, matchPart...)
+			MDArray = append(MDArray, true)
+			MD = MD[i+1:]
+		}
+		//time.Sleep(time.Second)
+		//fmt.Println(MD, MDArray)
+	}
+
+	// Convert marker, only in MH body
+	var MKArray MutationArray = make([]bool, mh.OffSet[len(mh.OffSet)-1]+1)
+	MKArray[0] = true
+	for _, i := range mh.OffSet {
+		MKArray[i] = true
+	}
+
+	// compare
+	for i := 0; i < len(MKArray); i++ {
+		if int(mh.POS)+i-int(sam.pos) > 0 && int(mh.POS)+i-int(sam.pos) < len(MDArray) &&
+			MKArray[i] == false &&
+			MDArray[int(mh.POS)+i-int(sam.pos)] == true &&
+			mh.POS-sam.pos < 200 {
+			//fmt.Println(MDArray[mh.POS-sam.pos:])
+			//fmt.Println(sam.AuxiliaryTag["MD"], sam.pos, mh.POS, mh.ID, sam.seqID)
+			//fmt.Println("Marker")
+			//fmt.Println(MKArray)
+			//time.Sleep(time.Second * 20)
+			return true
+		}
+	}
+	return false
+}
+
+type MutationArray []bool
+
+func (ma MutationArray) String() string {
+	var s = strings.Builder{}
+	for i := 0; i < len(ma); i++ {
+		if ma[i] == false {
+			s.WriteString("0")
+		} else {
+			s.WriteString("1")
+		}
+	}
+	return s.String()
 }
 
 func NewMHCollection() map[string]MH {

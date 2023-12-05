@@ -7,17 +7,18 @@ import (
 )
 
 type SAM struct {
-	seqID       string
-	flag        uint64
-	chr         string
-	pos         uint64
-	mapQ        uint64
-	cigar       string
-	refNext     string
-	posNext     uint64
-	templateLen int64
-	seq         string
-	qual        string
+	seqID        string
+	flag         uint64
+	chr          string
+	pos          uint64
+	mapQ         uint64
+	cigar        string
+	refNext      string
+	posNext      uint64
+	templateLen  int64
+	seq          string
+	qual         string
+	AuxiliaryTag map[string]string
 }
 
 /*
@@ -29,6 +30,7 @@ func NewSAM(record string) *SAM {
 		align = new(SAM)
 		err   error
 	)
+	align.AuxiliaryTag = make(map[string]string)
 
 	fields := strings.Split(record, "\t")
 	if len(fields) < 11 {
@@ -51,6 +53,8 @@ func NewSAM(record string) *SAM {
 	align.seq = fields[9]
 	align.qual = fields[10]
 
+	align.AuxiliaryTag["MD"] = fields[17][5:]
+
 	return align
 }
 
@@ -63,9 +67,12 @@ func (s *SAM) TypingMH(mh MH) AlleleMH {
 		strings.IndexAny(s.cigar, "IDNSHPX=") != -1 ||
 		mh.POS > s.pos+uint64(len(s.seq)) || // ref.first.SNP > align.end
 		mh.OffSet[len(mh.OffSet)-1]+mh.POS < s.pos { // ref.last.SNP < align.start
+
 		return ""
 	}
-
+	if mh.Mutation(s) { // have external mutation in reads. Maybe sequencing errors.
+		return ""
+	}
 	//fmt.Println("okk", s.chr, mh)
 
 	var alleleSNP []string // The first SNP.

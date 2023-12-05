@@ -2,6 +2,8 @@
 
 ```bash
 go run github.com/xuweixw/typing-markers -OUT demo -SAM demo.sam -VCF example/microhaplotype-markers.vcf -min_freq 0.2
+
+go run TypingMarkers -OUT demo -SAM example/H28.sample.sam -VCF example/microhaplotype-markers.vcf -min_freq 0.2 
 ```
 
 you can get a file with .csv suffix and specifying out prefix. In this example, it is demo.csv
