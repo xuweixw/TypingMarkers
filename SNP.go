@@ -35,8 +35,8 @@ func (snp SNP) GetAlleles() []uint64 {
 }
 
 func (snp SNP) VerboseString() string {
-	return fmt.Sprintf("%s\t%d\t%d\t%d\t%d\t%d",
-		snp.ID, snp.Alleles[0], snp.Alleles[1], snp.Alleles[2], snp.Alleles[3], snp.POS)
+	return fmt.Sprintf("%s\t%d\t%d\t%d\t%d",
+		snp.ID, snp.Alleles[0], snp.Alleles[1], snp.Alleles[2], snp.Alleles[3])
 }
 
 func (snp SNP) String() string {
