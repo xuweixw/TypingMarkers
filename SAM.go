@@ -23,6 +23,7 @@ type SAM struct {
 
 /*
 NewSAM parses a string to SAM struct.
+The first base in a reference sequence has coordinate 1.
 seqID 99	CHR	POS	42	24M	=	16574679	321	sequence	quality	AS:i:0  XN:i:0  XM:i:0  XO:i:0  XG:i:0  NM:i:0  MD:Z:150	YS:i:-20	YT:Z:CP
 */
 func NewSAM(record string) *SAM {
@@ -105,7 +106,7 @@ func (s *SAM) TypingSNP(marker SNP) string {
 	}
 
 	// 1st base having position 1
-	return string(s.seq[pos-1])
+	return string(s.seq[pos])
 }
 
 // AdjustPos offset sequence index according to cigar value 's'.
