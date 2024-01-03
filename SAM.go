@@ -92,7 +92,7 @@ func (s *SAM) TypingMH(mh MH) AlleleMH {
 }
 
 // TypingSNP returns the allele.
-// vcf format start with 1st base having position 1
+// VCF format starts from one not zero.
 func (s *SAM) TypingSNP(marker SNP) string {
 	if s.chr != marker.CHROM || marker.POS-s.pos > uint64(len(s.seq)) || marker.POS-1 < s.pos {
 		return "N"

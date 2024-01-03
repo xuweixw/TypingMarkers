@@ -37,7 +37,8 @@ func (v INFOValue) String() string {
 }
 
 /*
-VCFFormat struct hold a VCF record, follow as:
+VCFFormat struct hold a VCF record. The Position starts from one not zero.
+The format follows as:
 
 	#CHROM	POS	ID	REF	ALT	QUAL FILTER INFO	FORMAT	NA00001
 	1	2827694	rs2376870	CGTGGATGCGGGGAC	C	.	PASS	SVTYPE=DEL;END=2827762;HOMLEN=1;HOMSEQ=G;SVLEN=-68	GT:GQ	1/1:13.9
