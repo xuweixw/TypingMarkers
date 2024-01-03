@@ -17,10 +17,16 @@ var (
 		"allele, ranging from 0 for high depth to 1 for low depth")
 )
 
+const (
+	VERSION    = "v1.0.1"
+	UpdateDate = "2024-01-03"
+)
+
 func main() {
 	flag.Parse()
 	if *VCF == "" || *SAMPath == "" {
 		flag.Usage()
+		fmt.Println(VERSION, UpdateDate)
 		os.Exit(1)
 	}
 	//filterSAM()
