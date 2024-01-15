@@ -7,17 +7,20 @@ import (
 )
 
 type SAM struct {
-	seqID        string
-	flag         uint64
-	chr          string
-	pos          uint64
-	mapQ         uint64
-	cigar        string
-	refNext      string
-	posNext      uint64
-	templateLen  int64
-	seq          string
-	qual         string
+	// First 11 mandatory fields
+	seqID       string
+	flag        uint64
+	chr         string
+	pos         uint64
+	mapQ        uint64
+	cigar       string
+	refNext     string
+	posNext     uint64
+	templateLen int64
+	seq         string
+	qual        string
+
+	// Optional fields follow the TAG:TYPE:VALUE format.
 	AuxiliaryTag map[string]string
 }
 
@@ -34,7 +37,7 @@ func NewSAM(record string) *SAM {
 	align.AuxiliaryTag = make(map[string]string)
 
 	fields := strings.Split(record, "\t")
-	if len(fields) < 11 {
+	if record[0] == '@' {
 		return nil
 	}
 	align.seqID = fields[0]
@@ -54,7 +57,9 @@ func NewSAM(record string) *SAM {
 	align.seq = fields[9]
 	align.qual = fields[10]
 
-	align.AuxiliaryTag["MD"] = fields[17][5:]
+	for i := 11; i < len(fields); i++ {
+		align.AuxiliaryTag[fields[i][:2]] = fields[i][5:]
+	}
 
 	return align
 }
