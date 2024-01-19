@@ -126,7 +126,7 @@ func NewVCFFormat(file *os.File) (records []GeneticMarker) {
 			for _, allele := range strings.Split(record.ALT, ",") {
 				alleles[allele] = 0
 			}
-			records = append(records, MH{VCFFormat: record, OffSet: offset, Alleles: alleles, RareAlleles: make(map[AlleleMH]float64)})
+			records = append(records, MH{VCFFormat: record, OffSet: offset, Alleles: alleles, RareAlleles: make(map[AlleleMH]float64), Percent: *perc})
 		} else {
 			records = append(records, SNP{VCFFormat: record})
 		}

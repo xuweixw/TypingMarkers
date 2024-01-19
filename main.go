@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	OUT      = flag.String("OUT", "result", "specify the prefix of all output files")
-	SAMPath  = flag.String("SAM", "", "specify SAM path")
-	VCF      = flag.String("VCF", "", "specify SNP path")
-	min_freq = flag.Float64("min_freq", 0.03, "specify minimum frequency of each "+
+	OUT     = flag.String("OUT", "result", "specify the prefix of all output files")
+	SAMPath = flag.String("SAM", "", "specify SAM path")
+	VCF     = flag.String("VCF", "", "specify SNP path")
+	perc    = flag.Bool("p", false, "print percentage in verbose omitting % symbol")
+	minFreq = flag.Float64("min_freq", 0.03, "specify minimum frequency of each "+
 		"allele, ranging from 0 for high depth to 1 for low depth")
 )
 

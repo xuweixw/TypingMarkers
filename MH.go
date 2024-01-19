@@ -21,14 +21,20 @@ type MH struct {
 	// the offset is relative to first SNP.
 	OffSet []uint64
 
+	// the private field 'percent' print the percent of each allele omitting the '%' symbol.
+	Percent bool
+
 	Alleles     map[AlleleMH]float64 // 单个个体每个基因型的统计深度
 	RareAlleles map[AlleleMH]float64
 	Population  map[string][2]AlleleMH //每个个体的基因型, 带"."的alleleMH都用单个"."表示
 }
 
 func (mh MH) String() string {
-	var genotype = mh.DetermineGenotype()
-	var genotypeSlice = genotype[:]
+	var (
+		genotype      = mh.DetermineGenotype()
+		genotypeSlice = genotype[:]
+	)
+
 	// There are four compounds that make of DNA (Adenine, Guanine, Cytosine, Thymine).
 	sort.Strings(genotypeSlice)
 
@@ -37,11 +43,21 @@ func (mh MH) String() string {
 
 // VerboseString print the details of each alleles of each markers, including coverage/count/depth, position.
 func (mh MH) VerboseString() string {
-	return fmt.Sprintf("%s\t%d\t%s\t%s\t%s", mh.CHROM, mh.POS, mh.ID, mapToString(mh.Alleles), mapToString(mh.RareAlleles))
+	var depth float64
+	if mh.Percent {
+		for _, k := range mh.RareAlleles {
+			depth += k
+		}
+		for _, k := range mh.Alleles {
+			depth += k
+		}
+	}
+
+	return fmt.Sprintf("%s\t%d\t%s\t%s\t%s", mh.CHROM, mh.POS, mh.ID, mapToString(mh.Alleles, depth), mapToString(mh.RareAlleles, depth))
 }
 
 // mapToString is generic function to print map type.
-func mapToString[T int | float64 | float32](m map[string]T) string {
+func mapToString[T int | float64 | float32](m map[string]T, depth float64) string {
 	var (
 		s                = strings.Builder{}
 		mapSortedByValue = make([][2]interface{}, 0, len(m))
@@ -53,7 +69,11 @@ func mapToString[T int | float64 | float32](m map[string]T) string {
 		return mapSortedByValue[i][1].(T) > mapSortedByValue[j][1].(T)
 	})
 	for _, v := range mapSortedByValue {
-		s.WriteString(fmt.Sprintf("%s:%0.f ", v[0].(string), v[1].(float64)))
+		if depth > 0 {
+			s.WriteString(fmt.Sprintf("%s:%0.2f ", v[0].(string), v[1].(float64)/depth*100))
+		} else {
+			s.WriteString(fmt.Sprintf("%s:%0.f ", v[0].(string), v[1].(float64)))
+		}
 	}
 	return s.String()
 }
@@ -77,7 +97,7 @@ func (mh MH) DetermineGenotype() [2]AlleleMH {
 	}
 	// Omit alleles which of frequency are less than 3%.
 	for allele, n := range mh.Alleles {
-		if n/count > *min_freq {
+		if n/count > *minFreq {
 			genotype = append(genotype, allele)
 		}
 	}

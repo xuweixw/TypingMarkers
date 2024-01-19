@@ -23,3 +23,5 @@ recall File.seek()
 ? 检查mh20GP-034的OFFSET是20还是21。 21 checkbox
 
 debug RareAllele统计频率不为SNP倍数的问题
+
+goreleaser --snapshot --clean
