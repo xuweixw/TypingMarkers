@@ -14,6 +14,7 @@ var (
 	SAMPath = flag.String("SAM", "", "specify SAM path")
 	VCF     = flag.String("VCF", "", "specify SNP path")
 	perc    = flag.Bool("p", false, "print percentage in verbose omitting % symbol")
+	minPerc = flag.Float64("min_perc", 0, "specify minimum percentage reported alleles in verbose, range 0 to 100")
 	minFreq = flag.Float64("min_freq", 0.03, "specify minimum frequency of each "+
 		"allele, ranging from 0 for high depth to 1 for low depth")
 )

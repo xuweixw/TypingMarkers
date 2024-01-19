@@ -21,9 +21,6 @@ type MH struct {
 	// the offset is relative to first SNP.
 	OffSet []uint64
 
-	// the private field 'percent' print the percent of each allele omitting the '%' symbol.
-	Percent bool
-
 	Alleles     map[AlleleMH]float64 // 单个个体每个基因型的统计深度
 	RareAlleles map[AlleleMH]float64
 	Population  map[string][2]AlleleMH //每个个体的基因型, 带"."的alleleMH都用单个"."表示
@@ -44,7 +41,8 @@ func (mh MH) String() string {
 // VerboseString print the details of each alleles of each markers, including coverage/count/depth, position.
 func (mh MH) VerboseString() string {
 	var depth float64
-	if mh.Percent {
+	// the 'perc' option print the percent of each allele omitting the '%' symbol.
+	if *perc {
 		for _, k := range mh.RareAlleles {
 			depth += k
 		}
@@ -70,7 +68,11 @@ func mapToString[T int | float64 | float32](m map[string]T, depth float64) strin
 	})
 	for _, v := range mapSortedByValue {
 		if depth > 0 {
-			s.WriteString(fmt.Sprintf("%s:%0.2f ", v[0].(string), v[1].(float64)/depth*100))
+			if p := v[1].(float64) / depth * 100; p >= *minPerc {
+				s.WriteString(fmt.Sprintf("%s:%0.2f ", v[0].(string), p))
+			}
+		} else if depth == 0 {
+			s.WriteString("")
 		} else {
 			s.WriteString(fmt.Sprintf("%s:%0.f ", v[0].(string), v[1].(float64)))
 		}
