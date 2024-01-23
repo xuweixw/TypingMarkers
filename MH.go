@@ -81,7 +81,7 @@ func mapToString[T int | float64 | float32](m map[string]T, depth float64) strin
 func (mh MH) GetCHROM() string {
 	return mh.CHROM
 }
-func (mh MH) GetPOS() uint64 {
+func (mh MH) GetPOS() int64 {
 	return mh.POS
 }
 

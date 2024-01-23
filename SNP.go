@@ -24,7 +24,7 @@ var SortedBASE = [4]BASE{"A", "T", "C", "G"}
 // Type assertion at compile time, to check SNP implements GeneticMarker interface.
 var _ GeneticMarker = (*SNP)(nil)
 
-func (snp SNP) GetPOS() uint64 {
+func (snp SNP) GetPOS() int64 {
 	return snp.POS
 }
 func (snp SNP) GetCHROM() string {

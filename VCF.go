@@ -46,7 +46,7 @@ The format follows as:
 */
 type VCFFormat struct {
 	CHROM  string
-	POS    uint64
+	POS    int64
 	ID     string
 	REF    string
 	ALT    string
@@ -106,7 +106,7 @@ func NewVCFFormat(file *os.File) (records []GeneticMarker) {
 		if len(fields) < 8 || fields[0][0] == '#' {
 			continue
 		}
-		Pos, _ := strconv.ParseUint(fields[1], 10, 64)
+		Pos, _ := strconv.ParseInt(fields[1], 10, 64)
 		record := VCFFormat{
 			CHROM: fields[0], POS: Pos, ID: fields[2],
 			REF: fields[3], ALT: fields[4],
@@ -136,6 +136,6 @@ func NewVCFFormat(file *os.File) (records []GeneticMarker) {
 
 type GeneticMarker interface {
 	GetCHROM() string
-	GetPOS() uint64
+	GetPOS() int64
 	String() string
 }

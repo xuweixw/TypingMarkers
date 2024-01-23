@@ -11,7 +11,7 @@ type SAM struct {
 	seqID       string
 	flag        uint64
 	chr         string
-	pos         uint64
+	pos         int64
 	mapQ        uint64
 	cigar       string
 	refNext     string
@@ -44,7 +44,7 @@ func NewSAM(record string) *SAM {
 	align.flag, err = strconv.ParseUint(fields[1], 10, 64)
 	check(err)
 	align.chr = fields[2]
-	align.pos, err = strconv.ParseUint(fields[3], 10, 64)
+	align.pos, err = strconv.ParseInt(fields[3], 10, 64)
 	check(err)
 	align.mapQ, err = strconv.ParseUint(fields[4], 10, 60)
 	check(err)
@@ -71,9 +71,8 @@ func (s *SAM) TypingMH(mh MH) AlleleMH {
 	// the record don't overlap with MicroHaplotype marker.
 	if s.chr != mh.CHROM ||
 		strings.IndexAny(s.cigar, "IDNSHPX=") != -1 ||
-		mh.POS > s.pos+uint64(len(s.seq)) || // ref.first.SNP > align.end
-		mh.OffSet[len(mh.OffSet)-1]+mh.POS < s.pos { // ref.last.SNP < align.start
-
+		mh.POS > s.pos+int64(len(s.seq)) || // ref.first.SNP > align.end
+		int64(mh.OffSet[len(mh.OffSet)-1])+mh.POS < s.pos { // ref.last.SNP < align.start
 		return ""
 	}
 	if mh.Mutation(s) { // have external mutation in reads. Maybe sequencing errors.
@@ -88,7 +87,7 @@ func (s *SAM) TypingMH(mh MH) AlleleMH {
 		alleleSNP = append(alleleSNP, string(s.seq[mh.POS-s.pos]))
 	}
 	for _, sub := range mh.OffSet { // The rest of SNPs.
-		if i := (sub + mh.POS) - s.pos; i >= 0 && i < uint64(len(s.seq)) {
+		if i := (int64(sub) + mh.POS) - s.pos; i >= 0 && i < int64(len(s.seq)) {
 			alleleSNP = append(alleleSNP, string(s.seq[i]))
 		} else {
 			alleleSNP = append(alleleSNP, ".")
@@ -100,13 +99,15 @@ func (s *SAM) TypingMH(mh MH) AlleleMH {
 // TypingSNP returns the allele.
 // VCF format starts from one not zero.
 func (s *SAM) TypingSNP(marker SNP) string {
-	if s.chr != marker.CHROM || marker.POS-s.pos > uint64(len(s.seq)) || marker.POS-1 < s.pos {
+	if s.chr != marker.CHROM || marker.POS-s.pos > int64(len(s.seq)) || marker.POS-1 < s.pos {
 		return "N"
 	}
 	// calculate offset
 	pos := AdjustPos(marker.POS-s.pos, s.cigar)
+
+	// Discriminant
 	// cigar sum is more than the length of sequences, return "N"
-	if int(pos) > len(s.seq) {
+	if int(pos) > len(s.seq) || pos < 0 {
 		return "N"
 	}
 
@@ -115,7 +116,7 @@ func (s *SAM) TypingSNP(marker SNP) string {
 }
 
 // AdjustPos offset sequence index according to cigar value 's'.
-func AdjustPos(pos uint64, s string) uint64 {
+func AdjustPos(pos int64, s string) int64 {
 	// extract cigar number into a slice.
 	nucleotideGroups := strings.FieldsFunc(s, func(r rune) bool {
 		return unicode.IsLetter(r)
@@ -131,7 +132,7 @@ func AdjustPos(pos uint64, s string) uint64 {
 			return pos
 		}
 
-		currentGroup, _ := strconv.ParseUint(nucleotideGroups[len(nucleotideGroups)-restGroups], 10, 64)
+		currentGroup, _ := strconv.ParseInt(nucleotideGroups[len(nucleotideGroups)-restGroups], 10, 64)
 		// each "D" decreases 1
 		// each "I" pluses 1
 		switch s[i] {
