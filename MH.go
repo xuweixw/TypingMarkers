@@ -42,13 +42,11 @@ func (mh MH) String() string {
 func (mh MH) VerboseString() string {
 	var depth float64
 	// the 'perc' option print the percent of each allele omitting the '%' symbol.
-	if *perc {
-		for _, k := range mh.RareAlleles {
-			depth += k
-		}
-		for _, k := range mh.Alleles {
-			depth += k
-		}
+	for _, k := range mh.RareAlleles {
+		depth += k
+	}
+	for _, k := range mh.Alleles {
+		depth += k
 	}
 
 	return fmt.Sprintf("%s\t%d\t%s\t%s\t%s", mh.CHROM, mh.POS, mh.ID, mapToString(mh.Alleles, depth), mapToString(mh.RareAlleles, depth))
@@ -67,7 +65,7 @@ func mapToString[T int | float64 | float32](m map[string]T, depth float64) strin
 		return mapSortedByValue[i][1].(T) > mapSortedByValue[j][1].(T)
 	})
 	for _, v := range mapSortedByValue {
-		if depth > 0 {
+		if depth > 0 && *perc {
 			if p := v[1].(float64) / depth * 100; p >= *minPerc {
 				s.WriteString(fmt.Sprintf("%s:%0.2f ", v[0].(string), p))
 			}
